@@ -1,0 +1,827 @@
+#+title: Delta Emacs configuration
+#+author: Caesar X Insanium
+
+* Purpose
+
+I guess this is my final Emacs Config to be uploaded to Github.
+
+* Init
+
+Here will the contents of the init file. Not tangled
+#+begin_src emacs-lisp :tangle no
+(org-babel-load-file (concat (expand-file-name user-emacs-directory) "README.org"))
+#+end_src
+
+Make sure that a =custom.el= file exists.
+
+* Package Manager
+
+Enable =:ensure t= globally. and other things.
+
+#+begin_src elisp 
+(require 'package)
+(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/")) ;; installed by default
+(add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")) ;; installed by default from Emacs 28 onwards
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+(setq use-package-always-ensure t)
+#+end_src
+
+* Keybindings: General, Hydra and Which Key
+
+Here Will Begin using General to define keybindings. Make sure this exists before anything else.
+Doesn't really help that much honestly
+
+#+begin_src elisp 
+(use-package general
+  :ensure t)
+(use-package which-key
+  :ensure t
+  :config
+  (which-key-mode 1))
+(use-package hydra
+  :ensure t)
+#+end_src
+
+#+RESULTS:
+
+* Emacs
+
+Emacs Specific Configuration and the like.
+
+#+begin_src elisp 
+(use-package emacs
+  :bind (("C-s" . consult-line)
+	 ("C-x M-f" . consult-recent-file)
+	 ("C-x C-o" . org-agenda)
+	 ("C-x C-g" . consult-ripgrep)
+	 ("C-x M-r" . recenter)
+	 ("C-x M-t" . consult-theme))
+        
+  :hook ((compilation-filter . ansi-color-compilation-filter)
+         (prog-mode . (lambda ()
+                        (interactive)
+                        (setq display-line-numbers 'relative)
+                        (display-line-numbers-mode 1)
+                        (setq truncate-lines t))))
+  :config
+  (setq custom-file (concat user-emacs-directory "custom.el"))
+  (load custom-file)
+(define-key global-map (kbd "C-M-i") (make-sparse-keymap)))
+
+#+end_src
+
+** Modes
+
+#+begin_src elisp
+(electric-pair-mode 1)
+(show-paren-mode 1)
+(save-place-mode 1)
+;; minibuffer history is saved
+(savehist-mode t)
+;; required for consult-recent-file
+(recentf-mode t)
+;; line containing point
+(global-hl-line-mode 1)
+;; revert files changed from disk
+(global-auto-revert-mode t)
+;; show column number
+(column-number-mode 1)
+
+;; disable graphical bullshit
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(electric-indent-mode -1)
+#+end_src
+
+** Variables
+
+#+begin_src elisp 
+;; Set Variables elisp
+(setq indent-tabs-mode nil
+      tab-width 2
+      c-basic-offset 2) ;; tab key will no longer insert tab characters
+(setq display-line-numbers 'relative)
+(setq backup-directory-alist '((".*" . "~/.local/share/Trash/Files")))
+(setq make-backup-files nil)
+(setq inhibit-startup-screen t)
+
+(setq native-comp-jit-compilation t)
+(setq truncate-lines nil)
+(setq package-install-upgrade-built-int t)
+#+end_src
+
+** Custom Commands
+
+#+begin_src elisp
+(defun my-reload-emacs ()
+  (interactive)
+  (load-file "~/.emacs.d/init.el"))
+(defun my-reload-buffer ()
+  (interactive)
+  (revert-buffer :ignore-auto :noconfirm))
+
+(defun my-show-window-dims ()
+
+  (interactive)
+  (message "Width: %s, Height :%s" (window-total-width) (window-total-height)))
+
+(defun my-choose-info-manual ()
+  (interactive)
+  (completing-read "Choose Manual:" my-info-manual-list))
+
+(defun my-is-deamon ()
+  (interactive)
+  (if (daemonp)
+      (message "Running in Daemon")
+    (message "Running Solo")))
+#+end_src
+
+* Org
+
+Org mode specific Configuration. I still have to read the Org Mode Manual
+
+What if I reserved single letter bindings for global minor modes and modified bindings for current major mode?
+#+begin_src elisp
+(use-package org
+  :ensure t
+  :bind (:map org-mode-map
+              ;; a lot of these bindings are defaults on org-mode emacs
+              ("C-c C-c" . org-babel-execute-src-block)
+              ("C-c C-j" . org-goto) ;; I like to be explicit, this binding is default
+              ("C-c C-t" . org-babel-tangle)
+              ("C-c C-e" . org-export-dispatch)
+              ("C-c C-," . org-insert-structure-template)
+	      ("C-c C-[" . org-do-promote)
+	      ("C-c C-]" . org-do-demote )
+	      ("C-c 0" . consult-outline))
+  :hook (org-mode . (lambda ()
+                      (interactive)
+                      (visual-line-mode 1)))
+  :config
+  (setq org-src-fontify-natively t) ;; enable syntax highlighting in source blocks in org mode
+  (setq org-src-preserve-indentation nil) ;; preserve leading whitespace on export
+  (setq org-edit-src-content-indentation 0) ;; disable that annoying bug where more indentation is added on newline)
+  (setq org-confirm-babel-evaluate nil) ;; confirmation of arbitrary code execute is for losers
+)
+#+end_src
+
+** Org Babel
+
+#+begin_src elisp 
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (R . t)
+   (scheme . t)
+   (python .t)
+   (clojure . t)))
+#+end_src
+
+* Enhancements
+
+
+** Vertico
+
+Check the github page for more information and to read documentation.
+[[https://github.com/minad/vertico][Vertico Docs]]
+
+#+begin_src elisp
+(use-package vertico
+  :ensure t
+  :config
+  ;; Allows for completion candidates to viewed in the minibuffer and selected from
+  ;; there
+  (setq completion-in-region-function
+      (lambda (&rest args)
+        (apply (if vertico-mode
+                   #'consult-completion-in-region
+                 #'completion--in-region)
+               args)))
+  (vertico-mode 1))
+#+end_src
+
+** Orderless
+
+Allows for more flexible completion candidate matching.
+
+#+begin_src elisp
+(use-package orderless
+  :ensure t
+  :config
+  (setq completion-styles '(orderless basic)
+        completion-catagory-overrides '((file (styles basic partial-completion)))))
+#+end_src
+
+** Marginalia
+
+Documentation in the Minibuffer. Show what stuff is available.
+[[https://github.com/minad/marginalia][Whats the purpose?]]
+
+#+begin_src elisp
+(use-package marginalia
+  :ensure t
+  :init
+  (marginalia-mode 1))
+#+end_src
+
+** Consult
+
+Searching and completion.
+
+#+begin_src elisp
+;; Example configuration for Consult
+(use-package consult
+  ;; Replace bindings. Lazily loaded by `use-package'.
+  :bind (;; C-c bindings in `mode-specific-map'
+         ("C-c M-x" . consult-mode-command)
+         ("C-c h" . consult-history)
+         ("C-c k" . consult-kmacro)
+         ("C-c m" . consult-man)
+         ("C-c i" . consult-info)
+         ([remap Info-search] . consult-info)
+         ;; C-x bindings in `ctl-x-map'
+         ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
+         ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
+         ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+         ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+         ("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
+         ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
+         ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
+         ;; Custom M-# bindings for fast register access
+         ("M-#" . consult-register-load)
+         ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+         ("C-M-#" . consult-register)
+
+         ;; Other custom bindings
+         ("M-y" . consult-yank-pop)                ;; orig. yank-pop
+         ;; M-g bindings in `goto-map'
+         ("M-g e" . consult-compile-error)
+         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+         ("M-g g" . consult-goto-line)             ;; orig. goto-line
+         ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
+         ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
+         ("M-g m" . consult-mark)
+         ("M-g k" . consult-global-mark)
+         ("M-g i" . consult-imenu)
+         ("M-g I" . consult-imenu-multi)
+         ;; M-s bindings in `search-map'
+         ("M-s d" . consult-find)                  ;; Alternative: consult-fd
+         ("M-s c" . consult-locate)
+         ("M-s g" . consult-grep)
+         ("M-s G" . consult-git-grep)
+         ("M-s r" . consult-ripgrep)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ("M-s k" . consult-keep-lines)
+         ("M-s u" . consult-focus-lines)
+         ;; Isearch integration
+         ("M-s e" . consult-isearch-history)
+         :map isearch-mode-map
+         ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+         ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+         ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+         ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+         ;; Minibuffer history
+         :map minibuffer-local-map
+         ("M-s" . consult-history)                 ;; orig. next-matching-history-element
+         ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+
+  ;; Enable automatic preview at point in the *Completions* buffer. This is
+  ;; relevant when you use the default completion UI.
+  :hook (completion-list-mode . consult-preview-at-point-mode)
+
+  ;; The :init configuration is always executed (Not lazy)
+  :init
+
+  ;; Tweak the register preview for `consult-register-load',
+  ;; `consult-register-store' and the built-in commands.  This improves the
+  ;; register formatting, adds thin separator lines, register sorting and hides
+  ;; the window mode line.
+  (advice-add #'register-preview :override #'consult-register-window)
+  (setq register-preview-delay 0.5)
+
+  ;; Use Consult to select xref locations with preview
+  (setq xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref)
+
+  ;; Configure other variables and modes in the :config section,
+  ;; after lazily loading the package.
+  :config
+
+  ;; Optionally configure preview. The default value
+  ;; is 'any, such that any key triggers the preview.
+  ;; (setq consult-preview-key 'any)
+  ;; (setq consult-preview-key "M-.")
+  ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
+  ;; For some commands and buffer sources it is useful to configure the
+  ;; :preview-key on a per-command basis using the `consult-customize' macro.
+  (consult-customize
+   consult-theme :preview-key '(:debounce 0.2 any)
+   consult-ripgrep consult-git-grep consult-grep consult-man
+   consult-bookmark consult-recent-file consult-xref
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+   ;; :preview-key "M-."
+   :preview-key '(:debounce 0.4 any))
+
+  ;; Optionally configure the narrowing key.
+  ;; Both < and C-+ work reasonably well.
+  (setq consult-narrow-key "<") ;; "C-+"
+
+  ;; Optionally make narrowing help available in the minibuffer.
+  ;; You may want to use `embark-prefix-help-command' or which-key instead.
+  ;; (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
+)
+#+end_src
+
+#+RESULTS:
+: consult-history
+
+** Embark
+
+Embark stuff. Occur mode
+
+#+begin_src elisp
+(use-package embark
+  :ensure t
+
+  :bind
+  (("C-." . embark-act)         ;; pick some comfortable binding
+   ("C-;" . embark-dwim)        ;; good alternative: M-.
+   ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+  :init
+
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  ;; Show the Embark target at point via Eldoc. You may adjust the
+  ;; Eldoc strategy, if you want to see the documentation from
+  ;; multiple providers. Beware that using this can be a little
+  ;; jarring since the message snhown in the minibuffer can be more
+  ;; than one line, causing the modeline to move up and down:
+
+  ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+  ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+
+  :config
+
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
+
+;; Consult users will also want the embark-consult package.
+(use-package embark-consult
+  :ensure t ; only need to install it, embark loads it after consult if found
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+#+end_src
+
+#+RESULTS:
+| consult-preview-at-point-mode |
+
+** Icons
+
+#+begin_src elisp
+(use-package all-the-icons)
+#+end_src
+
+** Themes
+
+*** Gruvbox
+
+#+begin_src elisp
+(use-package gruvbox-theme
+  :ensure t)
+#+end_src
+
+#+RESULTS:
+
+*** Solarized
+
+#+begin_src elisp
+(use-package solarized-theme
+  :ensure t)
+#+end_src
+
+#+RESULTS:
+
+*** Doom Themes
+
+#+begin_src elisp
+(use-package doom-themes
+  :ensure t
+  :config
+  ;; Global settings (defaults)
+  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  ;; Enable custom neotree theme (all-the-icons must be installed!)
+  (doom-themes-neotree-config)
+  ;; or for treemacs users
+  (setq doom-themes-treemacs-theme "doom-atom") ; use "doom-colors" for less minimal icon theme
+  (doom-themes-treemacs-config)
+  ;; Corrects (and improves) org-mode's native fontification.
+  (doom-themes-org-config))
+#+end_src
+
+#+RESULTS:
+: t
+
+*** Catpuccin
+
+#+begin_src elisp
+(use-package catppuccin-theme)
+#+end_src
+
+*** Set Theme
+
+#+begin_src elisp
+(setq catppuccin-flavor 'mocha)
+#+end_Src
+
+*** Kanagawa
+
+#+begin_src elisp
+(use-package kanagawa-themes)
+#+end_src
+
+#+RESULTS:
+
+** Modeline
+
+Just use the doom mode bar fuck it
+
+#+begin_src elisp
+(use-package doom-modeline
+   
+  :config
+  (setq doom-moneline-time-icon t)
+  (doom-modeline-mode 1))
+#+end_src
+
+** Helpful
+
+#+begin_src elisp
+  (use-package helpful
+    :ensure t
+    :bind (("C-h f" . helpful-callable) ;; function
+	   ("C-h v" . helpful-variable) 
+	   ("C-h k" . helpful-key)
+	   ("C-h x" . helpful-command)
+	   ("C-h C-d" . helpful-at-point)
+	   ("C-h F" . helpful-function)))
+#+end_src
+
+#+RESULTS:
+: helpful-function
+
+** Window Managment
+
+We will use a package named switch-window in order to allow easy switching of windows when hitting
+"C-x o". Better fucking defaults too.
+
+#+begin_src elisp
+  (use-package switch-window
+    :ensure t
+     
+    :bind (("C-x o" . switch-window)
+	   ("C-x 1" . switch-window-then-maximize)
+	   ("C-x 2" . switch-window-then-split-below)
+	   ("C-x 3" . switch-window-then-split-right)
+	   ("C-x 0" . switch-window-then-delete)
+	   ("C-x 4 d" . switch-window-then-dired)
+	   ("C-x 4 f" . switch-window-then-find-file)))
+#+end_src
+
+** Rainbows
+
+Rainbow parenthesis. Enable fucking everywhere.
+
+#+begin_src elisp
+(use-package rainbow-delimiters
+  :ensure t
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package rainbow-mode)
+#+end_src
+
+* Projects
+
+I will be using Magit and =project.el=
+
+** Git Integration: Magit
+
+Magit Magit Magit
+
+#+begin_src elisp
+(use-package magit
+  :ensure t)
+#+end_src
+ 
+** Project.el
+
+Check out the manual page. [[info:emacs#Project File Commands][Project Functions and Default Keybindings]] 
+
+- all of the default project keybindings start with 'C-x p'
+
+** Meson Mode: Build Systems
+
+Superior Build System?
+
+#+begin_src elisp
+(use-package meson-mode
+  :ensure t)
+#+end_src
+
+* Editing
+
+** Formatting
+
+#+begin_src elisp
+(use-package format-all
+  :preface
+  (defun ian/format-code ()
+    "Auto-format whole buffer."
+    (interactive)
+    (if (derived-mode-p 'prolog-mode)
+        (prolog-indent-buffer)
+      (format-all-buffer)))
+  :config
+  (add-hook 'prog-mode-hook #'format-all-ensure-formatter))
+#+end_src
+
+** Lisp Editing
+
+There are different options that are available for editing lisp.
+
+#+begin_src elisp
+(use-package lispy
+  :after geiser
+  :hook ((scheme-mode emacs-lisp-mode
+                      clojure-mode
+                      lisp-mode
+                      common-lisp-mode) . lispy-mode))
+#+end_src
+
+** Completion Sources: Cape
+
+#+begin_src elisp
+(define-prefix-command 'completion-prefix)
+(use-package cape
+  :ensure t
+  :init
+  ;; Add to the global default value of `completion-at-point-functions' which is
+  ;; used by `completion-at-point'.  The order of the functions matters, the
+  ;; first function returning a result wins.  Note that the list of buffer-local
+  ;; completion functions takes precedence over the global list.
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-elisp-block)
+  (add-to-list 'completion-at-point-functions #'info-complete-file)
+  (add-to-list 'completion-at-point-functions #'info-complete-symbol)
+  (add-to-list 'completion-at-point-functions #'complete-tag)
+  (add-to-list 'completion-at-point-functions #'cape-elisp-symbol)
+  :bind (:map prog-mode-map
+	      ("C-M-i i" . completion-at-point)
+	      ("C-M-i f" . cape-file)
+	      ("C-M-i d" . cape-dict)
+	      ("C-M-i e" . cape-elisp-symbol)
+	      ("C-M-i s" . cape-dabbrev)))
+#+end_src
+
+* Programming
+
+** TLDR
+
+TLDR pages inside of emacs for programming and command line goodness
+
+#+begin_src elisp
+(use-package tldr
+  :ensure t)
+#+end_src
+
+
+** Flymake
+
+Flymake would only work on eglot buffers and other filetypes that have a linter already defined for them.
+
+#+begin_src elisp
+(setq flymake-start-on-save-buffer t)
+(require 'flymake)
+(general-define-key :keymaps 'flymake-mode-map
+		    "M-n" '(flymake-goto-next-error :which-key "Next Error")
+		    "M-p" '(flymake-goto-prev-error :which-key "Previous Error")
+		    "M-`" '(flymake-show-buffer-diagnostics :which-key "Show all Errorsk"))
+#+end_src
+
+** Etags: seperate file utility
+
+At lot of things that do not have LSP mode available would require etags to work. I also need to remember to configure Etags as well as Eglot
+
+** XRef: Lookup definitions and references of Symbols
+
+Used in conjunction with Etags, Eglot. I need to read this particular section of the GNU Emacs Manual. [[info:emacs#Xref][Emacs XREF]]
+Xref is used for searching the definition of language symbols, references
+[[info:emacs#Looking Up Identifiers][XREF Docs Emacs Manual]].
+
+A suitable tags file can be created with =etags= command. This is the only way I
+know of that can generate Emacs compatible tags which is called =TAGS=
+
+
+Xref buffer has some built in bindings. [[info:emacs#Xref Commands][XREF Mode Bindings]] 
+
+** Eldoc
+
+This one too, in order to under Eglot does things
+
+#+begin_src elisp
+(setq eldoc-echo-area-use-multiline-p t
+      eldoc-echo-area-display-truncation-message t)
+#+end_src
+
+** Language Server Protocol: Eglot
+
+Reserved for future Eglot Configuration. Specific Language server configuration
+will be in the language specific section. Eglot automatically add completion at point
+functions to be used
+
+Find a way to only start eglot if a language server is already defined for it
+
+#+begin_src elisp 
+(use-package eglot
+  :config
+  (setq eglot-autoreconnect t
+        eglot-autoshutdown t))
+#+end_src
+
+* Language Specific
+
+** Sway
+
+#+begin_src elisp
+(use-package sway)
+#+end_src
+
+#+RESULTS:
+
+** C/C++/Java CC Mode
+
+#+begin_src elisp
+(add-hook 'c-mode-hook
+          (lambda ()
+            (interactive)
+            (eldoc-ensure)
+	    (setq display-line-numbers 'relative)))
+#+end_src
+
+** Rust
+
+Check out the rust mode github page for more documentation.
+
+#+begin_src elisp
+(use-package rust-mode
+  :bind (:map rust-mode-map
+              ("C-c r" . rust-run)
+              ("C-c C" . rust-compile)
+              ("C-c c" . rust-check)
+              ("C-c l" . rust-run-clippy))
+  :hook (rust-mode . eglot-ensure)
+  :config
+  (setq rust-format-on-save t))
+#+end_src
+
+#+RESULTS:
+: rust-run-clippy
+
+** Golang
+
+Gopher language.
+
+#+begin_src elisp
+;; functions are prefixed with go- 
+(use-package go-mode
+  :hook (go-mode . (lambda ()
+                     (interactive)
+		     (eglot-ensure))))
+#+end_src
+
+#+RESULTS:
+
+** Nim
+
+Nim language with power of power of C and extensibility of Lisp
+
+#+begin_src elisp
+(use-package nim-mode)
+#+end_src
+
+** Zig
+
+#+begin_src elisp
+(use-package zig-mode
+  :ensure t)
+#+end_src
+
+#+RESULTS:
+
+** Odin
+
+None Available for now
+
+** Scheme: Geiser
+
+Why are we still here just to suffer. Geiser is the way to go.
+
+Scheme completion is done with [[info:guile#Readline Functions][guile#Readline Functions]]
+
+#+begin_src elisp
+(use-package geiser
+  :config
+  (setq geiser-default-implementation '(guile))
+  (setq geiser-guile-binary "/usr/bin/guile"))
+(use-package geiser-guile)
+#+end_src
+
+
+** Clojure
+
+#+begin_src elisp
+(use-package clojure-mode)
+(use-package cider)
+#+end_src
+
+** Xonsh
+
+Some obscure shell that no none uses.
+
+#+begin_src elisp
+(use-package xonsh-mode)
+#+end_src
+
+** Fish
+
+Terrible scripting language
+
+#+begin_src elisp
+(use-package fish-mode)
+#+end_src
+
+** RISC-V
+
+Mode
+
+#+begin_src elisp
+(use-package riscv-mode
+  :ensure t)
+#+end_src
+
+** Swift
+
+Apple programming language for iOS, iPadOS and MacOS application development.
+
+#+begin_src elisp
+(use-package swift-mode
+  :ensure t)
+#+end_src
+
+** Haskell
+
+Function programming that is not lisp.
+
+#+begin_src elisp
+(use-package haskell-mode
+  :ensure t)
+#+end_src
+
+#+RESULTS:
+
+* Markup And Documents
+
+** Markdown
+
+I have to be able to view and edit Markdown files with the same ease as Org.
+[[https://jblevins.org/projects/markdown-mode/][Documentation]]
+
+I will continue configuring this stuff later.
+
+#+begin_src elisp
+(use-package markdown-mode
+  :hook (markdown-mode . (lambda ()
+			   (interactive)
+			   (setq truncate-lines t))))
+#+end_src
+
+** Yaml
+
+#+begin_src elisp
+(use-package yaml-mode)
+#+end_src
