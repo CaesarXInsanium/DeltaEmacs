@@ -7,7 +7,7 @@ I guess this is my final Emacs Config to be uploaded to Github.
 
 * Init
 
-Here will the contents of the init file. Not tangled
+Here will the contents of the init file. Not tangled since this line is explicitly inside of =init.el=
 #+begin_src emacs-lisp :tangle no
 (org-babel-load-file (concat (expand-file-name user-emacs-directory) "README.org"))
 #+end_src
@@ -41,11 +41,7 @@ Doesn't really help that much honestly
   :ensure t
   :config
   (which-key-mode 1))
-(use-package hydra
-  :ensure t)
 #+end_src
-
-#+RESULTS:
 
 * Emacs
 
@@ -58,7 +54,9 @@ Emacs Specific Configuration and the like.
 	 ("C-x C-o" . org-agenda)
 	 ("C-x C-g" . consult-ripgrep)
 	 ("C-x M-r" . recenter)
-	 ("C-x M-t" . consult-theme))
+	 ("C-x M-t" . consult-theme)
+	 ("C-x C-c" . save-buffers-kill-terminal)
+	 ("<f5>" . compile))
         
   :hook ((compilation-filter . ansi-color-compilation-filter)
          (prog-mode . (lambda ()
@@ -73,6 +71,9 @@ Emacs Specific Configuration and the like.
 
 #+end_src
 
+#+RESULTS:
+: compile
+
 ** Modes
 
 #+begin_src elisp
@@ -83,7 +84,7 @@ Emacs Specific Configuration and the like.
 (savehist-mode t)
 ;; required for consult-recent-file
 (recentf-mode t)
-;; line containing point
+;; highlight line containing point
 (global-hl-line-mode 1)
 ;; revert files changed from disk
 (global-auto-revert-mode t)
@@ -160,14 +161,18 @@ What if I reserved single letter bindings for global minor modes and modified bi
 	      ("C-c 0" . consult-outline))
   :hook (org-mode . (lambda ()
                       (interactive)
-                      (visual-line-mode 1)))
+                      (visual-line-mode 1)
+		      (org-indent-mode 1)))
   :config
   (setq org-src-fontify-natively t) ;; enable syntax highlighting in source blocks in org mode
   (setq org-src-preserve-indentation nil) ;; preserve leading whitespace on export
   (setq org-edit-src-content-indentation 0) ;; disable that annoying bug where more indentation is added on newline)
-  (setq org-confirm-babel-evaluate nil) ;; confirmation of arbitrary code execute is for losers
-)
+  ;; confirmation of arbitrary code execute is for losers
+  (setq org-confirm-babel-evaluate nil))
 #+end_src
+
+#+RESULTS:
+: consult-outline
 
 ** Org Babel
 
@@ -184,25 +189,23 @@ What if I reserved single letter bindings for global minor modes and modified bi
 * Enhancements
 
 
-** Vertico
+** TODO Vertico
 
+Replace or fix
 Check the github page for more information and to read documentation.
 [[https://github.com/minad/vertico][Vertico Docs]]
 
-#+begin_src elisp
+#+begin_src elisp :tangle yes
 (use-package vertico
   :ensure t
   :config
   ;; Allows for completion candidates to viewed in the minibuffer and selected from
   ;; there
-  (setq completion-in-region-function
-      (lambda (&rest args)
-        (apply (if vertico-mode
-                   #'consult-completion-in-region
-                 #'completion--in-region)
-               args)))
   (vertico-mode 1))
 #+end_src
+
+#+RESULTS:
+: t
 
 ** Orderless
 
@@ -221,12 +224,14 @@ Allows for more flexible completion candidate matching.
 Documentation in the Minibuffer. Show what stuff is available.
 [[https://github.com/minad/marginalia][Whats the purpose?]]
 
-#+begin_src elisp
+#+begin_src elisp :tangle no
 (use-package marginalia
   :ensure t
   :init
   (marginalia-mode 1))
 #+end_src
+
+#+RESULTS:
 
 ** Consult
 
@@ -241,54 +246,54 @@ Searching and completion.
          ("C-c h" . consult-history)
          ("C-c k" . consult-kmacro)
          ("C-c m" . consult-man)
-         ("C-c i" . consult-info)
-         ([remap Info-search] . consult-info)
-         ;; C-x bindings in `ctl-x-map'
-         ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
-         ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
-         ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
-         ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
-         ("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
-         ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
-         ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
-         ;; Custom M-# bindings for fast register access
-         ("M-#" . consult-register-load)
-         ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
-         ("C-M-#" . consult-register)
+	 ("C-c i" . consult-info)
+	 ([remap Info-search] . consult-info)
+	 ;; C-x bindings in `ctl-x-map'
+	 ("C-x M-:" . consult-complex-command)	   ;; orig. repeat-complex-command
+	 ("C-x b" . consult-buffer)		   ;; orig. switch-to-buffer
+	 ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+	 ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+	 ("C-x t b" . consult-buffer-other-tab)	   ;; orig. switch-to-buffer-other-tab
+	 ("C-x r b" . consult-bookmark)		   ;; orig. bookmark-jump
+	 ("C-x p b" . consult-project-buffer)	   ;; orig. project-switch-to-buffer
+	 ;; Custom M-# bindings for fast register access
+	 ("M-#" . consult-register-load)
+	 ("M-'" . consult-register-store)	   ;; orig. abbrev-prefix-mark (unrelated)
+	 ("C-M-#" . consult-register)
 
-         ;; Other custom bindings
-         ("M-y" . consult-yank-pop)                ;; orig. yank-pop
-         ;; M-g bindings in `goto-map'
-         ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
-         ("M-g g" . consult-goto-line)             ;; orig. goto-line
-         ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
-         ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
-         ("M-g m" . consult-mark)
-         ("M-g k" . consult-global-mark)
-         ("M-g i" . consult-imenu)
-         ("M-g I" . consult-imenu-multi)
-         ;; M-s bindings in `search-map'
-         ("M-s d" . consult-find)                  ;; Alternative: consult-fd
-         ("M-s c" . consult-locate)
-         ("M-s g" . consult-grep)
-         ("M-s G" . consult-git-grep)
-         ("M-s r" . consult-ripgrep)
-         ("M-s l" . consult-line)
-         ("M-s L" . consult-line-multi)
-         ("M-s k" . consult-keep-lines)
-         ("M-s u" . consult-focus-lines)
-         ;; Isearch integration
-         ("M-s e" . consult-isearch-history)
-         :map isearch-mode-map
-         ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
-         ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
-         ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
-         ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
-         ;; Minibuffer history
-         :map minibuffer-local-map
-         ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-         ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+	 ;; Other custom bindings
+	 ("M-y" . consult-yank-pop)		   ;; orig. yank-pop
+	 ;; M-g bindings in `goto-map'
+	 ("M-g e" . consult-compile-error)
+	 ("M-g f" . consult-flymake)		   ;; Alternative: consult-flycheck
+	 ("M-g g" . consult-goto-line)		   ;; orig. goto-line
+	 ("M-g M-g" . consult-goto-line)	   ;; orig. goto-line
+	 ("M-g o" . consult-outline)		   ;; Alternative: consult-org-heading
+	 ("M-g m" . consult-mark)
+	 ("M-g k" . consult-global-mark)
+	 ("M-g i" . consult-imenu)
+	 ("M-g I" . consult-imenu-multi)
+	 ;; M-s bindings in `search-map'
+	 ("M-s d" . consult-find)		   ;; Alternative: consult-fd
+	 ("M-s c" . consult-locate)
+	 ("M-s g" . consult-grep)
+	 ("M-s G" . consult-git-grep)
+	 ("M-s r" . consult-ripgrep)
+	 ("M-s l" . consult-line)
+	 ("M-s L" . consult-line-multi)
+	 ("M-s k" . consult-keep-lines)
+	 ("M-s u" . consult-focus-lines)
+	 ;; Isearch integration
+	 ("M-s e" . consult-isearch-history)
+	 :map isearch-mode-map
+	 ("M-e" . consult-isearch-history)	   ;; orig. isearch-edit-string
+	 ("M-s e" . consult-isearch-history)	   ;; orig. isearch-edit-string
+	 ("M-s l" . consult-line)		   ;; needed by consult-line to detect isearch
+	 ("M-s L" . consult-line-multi)		   ;; needed by consult-line to detect isearch
+	 ;; Minibuffer history
+	 :map minibuffer-local-map
+	 ("M-s" . consult-history)		   ;; orig. next-matching-history-element
+	 ("M-r" . consult-history))		   ;; orig. previous-matching-history-element
 
   ;; Enable automatic preview at point in the *Completions* buffer. This is
   ;; relevant when you use the default completion UI.
@@ -306,7 +311,7 @@ Searching and completion.
 
   ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function #'consult-xref
-        xref-show-definitions-function #'consult-xref)
+	xref-show-definitions-function #'consult-xref)
 
   ;; Configure other variables and modes in the :config section,
   ;; after lazily loading the package.
@@ -350,8 +355,8 @@ Embark stuff. Occur mode
   :ensure t
 
   :bind
-  (("C-." . embark-act)         ;; pick some comfortable binding
-   ("C-;" . embark-dwim)        ;; good alternative: M-.
+  (("C-." . embark-act)		;; pick some comfortable binding
+   ("C-;" . embark-dwim)	;; good alternative: M-.
    ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
 
   :init
@@ -372,9 +377,9 @@ Embark stuff. Occur mode
 
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
-               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
-                 nil
-                 (window-parameters (mode-line-format . none)))))
+	       '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+		 nil
+		 (window-parameters (mode-line-format . none)))))
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
@@ -420,7 +425,7 @@ Embark stuff. Occur mode
   :config
   ;; Global settings (defaults)
   (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+	doom-themes-enable-italic t) ; if nil, italics is universally disabled
 
   ;; Enable flashing mode-line on errors
   (doom-themes-visual-bell-config)
@@ -455,6 +460,7 @@ Embark stuff. Occur mode
 #+end_src
 
 #+RESULTS:
+
 
 ** Modeline
 
@@ -553,24 +559,22 @@ Superior Build System?
     "Auto-format whole buffer."
     (interactive)
     (if (derived-mode-p 'prolog-mode)
-        (prolog-indent-buffer)
+	(prolog-indent-buffer)
       (format-all-buffer)))
   :config
   (add-hook 'prog-mode-hook #'format-all-ensure-formatter))
 #+end_src
 
-** Lisp Editing
+** TODO Lisp Editing
 
-There are different options that are available for editing lisp.
+Change to paredit. Learn Paredit. Download cheatsheet
 
-#+begin_src elisp
-(use-package lispy
-  :after geiser
-  :hook ((scheme-mode emacs-lisp-mode
-                      clojure-mode
-                      lisp-mode
-                      common-lisp-mode) . lispy-mode))
+#+begin_src elisp :tangle yes
+(use-package paredit
+  :ensure t)
 #+end_src
+
+#+RESULTS:
 
 ** Completion Sources: Cape
 
