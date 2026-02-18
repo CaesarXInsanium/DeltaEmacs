@@ -314,7 +314,6 @@ There are other interesting functions, but not important right now.
 "b" 'consult-bookmark
 "c" 'consult-compiler-error
 "s" 'consult-goto-line
-"C-g" 'consult-git-grep
 )
 #+end_src
 - =consult-outline=
@@ -420,10 +419,8 @@ Just use the doom mode bar fuck it
 : helpful-function
 
 ** Window Managment
-
 We will use a package named switch-window in order to allow easy switching of windows when hitting
 "C-x o". Better fucking defaults too.
-
 #+begin_src elisp
   (use-package switch-window
     :ensure t
@@ -436,11 +433,8 @@ We will use a package named switch-window in order to allow easy switching of wi
 	   ("C-x 4 d" . switch-window-then-dired)
 	   ("C-x 4 f" . switch-window-then-find-file)))
 #+end_src
-
 ** Rainbows
-
 Rainbow parenthesis. Enable fucking everywhere.
-
 #+begin_src elisp
 (use-package rainbow-delimiters
   :ensure t
@@ -450,33 +444,23 @@ Rainbow parenthesis. Enable fucking everywhere.
 #+end_src
 
 * Projects
-
-I will be using Magit and =project.el=
-
 ** Git Integration: Magit
-
 Magit Magit Magit
-
 #+begin_src elisp
 (use-package magit
   :ensure t)
 #+end_src
- 
 ** Project.el
 Check out the manual page. [[info:emacs#Project File Commands][Project Functions and Default Keybindings]]. all of the default project keybindings start with 'C-x p'
 - TODO (consult-key project prefix consult-project)
-
 ** Meson Mode: Build Systems
 Superior Build System? Not really. Scripts are very good. I also don't really care about cross platform integration. At most I will acomodate BSD systems, other glibc versions, clang, Redox. And MacOS. But Windows no.
 #+begin_src elisp
 (use-package meson-mode
   :ensure t)
 #+end_src
-
 * Editing
-
 ** Formatting
-
 #+begin_src elisp
 (use-package format-all
   :preface
@@ -489,16 +473,12 @@ Superior Build System? Not really. Scripts are very good. I also don't really ca
   :config
   (add-hook 'prog-mode-hook #'format-all-ensure-formatter))
 #+end_src
-
 ** Lisp Editing
-
-Change to paredit. Learn Paredit. Download cheatsheet
-
+Change to paredit. Learn Paredit. Download cheatsheet. Learn stuff
 #+begin_src elisp :tangle yes
 (use-package paredit
   :ensure t)
 #+end_src
-
 * Programming
 ** TLDR
 TLDR pages inside of emacs for programming and command line goodness
@@ -506,17 +486,6 @@ TLDR pages inside of emacs for programming and command line goodness
 (use-package tldr
   :ensure t)
 #+end_src
-** Flymake
-I have completely gotten rid of eglot.
-#+begin_src elisp
-(setq flymake-start-on-save-buffer t)
-(require 'flymake)
-(general-define-key :keymaps 'flymake-mode-map
-		    "M-n" '(flymake-goto-next-error :which-key "Next Error")
-		    "M-p" '(flymake-goto-prev-error :which-key "Previous Error")
-		    "M-`" '(flymake-show-buffer-diagnostics :which-key "Show all Errorsk"))
-#+end_src
-
 ** XRef: Lookup definitions and references of Symbols
 Used in conjunction with Etags. I need to read this particular section of the GNU Emacs Manual. [[info:emacs#Xref][Emacs XREF]]
 Xref is used for searching the definition of language symbols, references
@@ -526,7 +495,7 @@ know of that can generate Emacs compatible tags which is called =TAGS=
 I have forgotten how to make org links.
 Xref buffer has some built in bindings. [[info:emacs#Xref Commands][XREF Mode Bindings]] 
 ** Global
-GNU Global is the alternative to =etags=
+GNU Global is the alternative to =etags=. Not very good though, as it lags hard as fuck.
 * Language Specific
 ** Sway
 #+begin_src elisp
@@ -553,12 +522,13 @@ Nim language with power of power of C and extensibility of Lisp
 (use-package nim-mode)
 #+end_src
 ** Zig
+I refuse to use this language unless it reaches version 1.
 #+begin_src elisp
 (use-package zig-mode
   :ensure t)
 #+end_src
 ** Odin
-None Available for now
+There is some, just have to choose the correct one.
 ** Scheme: Geiser
 Why are we still here just to suffer. Geiser is the way to go.
 Scheme completion is done with [[info:guile#Readline Functions][guile#Readline Functions]]
@@ -584,29 +554,23 @@ Terrible scripting language
 #+begin_src elisp
 (use-package fish-mode)
 #+end_src
-
+** TODO ZSH
+** TODO Xonsh
+** TODO Nushell
 ** RISC-V
-
-Mode
-
+Remember other assembly languages
 #+begin_src elisp
 (use-package riscv-mode
   :ensure t)
 #+end_src
-
 ** Swift
-
 Apple programming language for iOS, iPadOS and MacOS application development.
-
 #+begin_src elisp
 (use-package swift-mode
   :ensure t)
 #+end_src
-
 ** Haskell
-
 Function programming that is not lisp.
-
 #+begin_src elisp
 (use-package haskell-mode
   :ensure t)
@@ -615,23 +579,17 @@ Function programming that is not lisp.
 #+RESULTS:
 
 * Markup And Documents
-
 ** Markdown
-
 I have to be able to view and edit Markdown files with the same ease as Org.
 [[https://jblevins.org/projects/markdown-mode/][Documentation]]
-
 I will continue configuring this stuff later.
-
 #+begin_src elisp
 (use-package markdown-mode
   :hook (markdown-mode . (lambda ()
 			   (interactive)
 			   (setq truncate-lines t))))
 #+end_src
-
 ** Yaml
-
 #+begin_src elisp
 (use-package yaml-mode)
 #+end_src
