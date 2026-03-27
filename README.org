@@ -1,33 +1,41 @@
 #+title: Delta Emacs configuration
 #+author: Caesar X Insanium
 * Purpose
-I guess this is my final Emacs Config to be uploaded to Github.
+This is my literate config file for Emacs. It uses =straight.el=. And does not use evil or general anymore.
+* Straight.el
+#+begin_src elisp
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name
+	"straight/repos/straight.el/bootstrap.el"
+	(or (bound-and-true-p straight-base-dir)
+	    user-emacs-directory)))
+      (bootstrap-version 7))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+	(url-retrieve-synchronously
+	 "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+	 'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
+
+(straight-use-package 'el-patch)
+(straight-use-package 'use-package)
+(setq straight-use-package-by-default 't)
+#+end_src
 * Init
 Here will the contents of the init file. Not tangled since this line is explicitly inside of =init.el=
 #+begin_src emacs-lisp :tangle no
 (org-babel-load-file (concat (expand-file-name user-emacs-directory) "README.org"))
 #+end_src
 Make sure that a =custom.el= file exists.
-* Package Manager
-Enable =:ensure t= globally. and other things.
-#+begin_src elisp 
-(require 'package)
-(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/")) ;; installed by default
-(add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")) ;; installed by default from Emacs 28 onwards
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 
-(unless (package-installed-p 'use-package)
-  (package-install 'use-package))
-(setq use-package-always-ensure t)
-#+end_src
-* Keybindings: General and Which Key
-Here Will Begin using General to define keybindings. Make sure this exists before anything else.
-Doesn't really help that much honestly
-#+begin_src elisp 
-(use-package general
-  :ensure t)
+* Which Key
+Which key so that I know what exactly I am doing.
+#+begin_src elisp  
 (use-package which-key
-  :ensure t
+  :straight t
   :config
   (which-key-mode 1))
 #+end_src
@@ -35,9 +43,11 @@ Doesn't really help that much honestly
 Emacs Specific Configuration and the like.
 #+begin_src elisp 
 (use-package emacs
+  :straight (:type built-in)
   ;; these bindings override default options.
   :bind (("C-s" . consult-line)
 	 ("C-x f" . consult-recent-file)
+	 ("C-x M-f" . consult-fd)
 	 ("C-x M-t" . consult-theme)
 	 ("C-x C-c" . save-buffers-kill-terminal)
 	 ("<f5>" . compile))
@@ -50,8 +60,12 @@ Emacs Specific Configuration and the like.
 			(electric-indent-mode 1))))
   :config
   (setq custom-file (concat user-emacs-directory "custom.el"))
-  (load custom-file)
+  (load custom-file))
 #+end_src
+
+#+RESULTS:
+: compile
+
 ** Modes
 #+begin_src elisp
 ; keep parenthesis balanced. must be disabled in lispy files. Show matching
@@ -91,7 +105,6 @@ Emacs Specific Configuration and the like.
 
 (setq native-comp-jit-compilation t)
 (setq truncate-lines nil)
-(setq package-install-upgrade-built-int t)
 #+end_src
 
 ** Custom Commands
@@ -100,6 +113,7 @@ Emacs Specific Configuration and the like.
 (defun my-reload-emacs ()
   (interactive)
   (load-file "~/.emacs.d/init.el"))
+
 (defun my-reload-buffer ()
   (interactive)
   (revert-buffer :ignore-auto :noconfirm))
@@ -123,7 +137,7 @@ Org mode specific Configuration. I still have to read the Org Mode Manual
 What if I reserved single letter bindings for global minor modes and modified bindings for current major mode?
 #+begin_src elisp
 (use-package org
-  :ensure t
+  :straight (:type built-in)
   :bind (:map org-mode-map
               ;; a lot of these bindings are defaults on org-mode emacs
               ("C-c C-c" . org-babel-execute-src-block)
@@ -149,20 +163,7 @@ What if I reserved single letter bindings for global minor modes and modified bi
 #+RESULTS:
 : consult-outline
 
-** Org Babel
-
-#+begin_src elisp 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((emacs-lisp . t)
-   (R . t)
-   (scheme . t)
-   (python .t)
-   (clojure . t)))
-#+end_src
-
 * Enhancements
-
 
 ** Vertico
 
@@ -172,7 +173,7 @@ Check the github page for more information and to read documentation.
 
 #+begin_src elisp :tangle yes
 (use-package vertico
-  :ensure t
+  :straight t
   :config
   ;; Allows for completion candidates to viewed in the minibuffer and selected from
   ;; there
@@ -188,7 +189,6 @@ Allows for more flexible completion candidate matching.
 
 #+begin_src elisp
 (use-package orderless
-  :ensure t
   :config
   (setq completion-styles '(orderless basic)
         completion-catagory-overrides '((file (styles basic partial-completion)))))
@@ -300,25 +300,6 @@ Searching and completion.
 #+end_src
 
 
-*** Keybindings
-There are other interesting functions, but not important right now.
-#+begin_src elisp
-(define-key global-map (kbd "M-c") (make-sparse-keymap)))
-(general-create-definer consult-key
-  :prefix "M-c")
-(consult-key
-"f" 'consult
-"g" 'consult-ripgrep
-"l" 'consult-line
-"i" 'consult-info
-"b" 'consult-bookmark
-"c" 'consult-compiler-error
-"s" 'consult-goto-line
-)
-#+end_src
-- =consult-outline=
-- =consult-imenu=
-
 ** Icons
 
 #+begin_src elisp
@@ -327,29 +308,10 @@ There are other interesting functions, but not important right now.
 
 ** Themes
 
-*** Gruvbox
-
-#+begin_src elisp
-(use-package gruvbox-theme
-  :ensure t)
-#+end_src
-
-#+RESULTS:
-
-*** Solarized
-
-#+begin_src elisp
-(use-package solarized-theme
-  :ensure t)
-#+end_src
-
-#+RESULTS:
-
 *** Doom Themes
 
 #+begin_src elisp
 (use-package doom-themes
-  :ensure t
   :config
   ;; Global settings (defaults)
   (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
@@ -365,30 +327,6 @@ There are other interesting functions, but not important right now.
   ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config))
 #+end_src
-
-#+RESULTS:
-: t
-
-*** Catpuccin
-
-#+begin_src elisp
-(use-package catppuccin-theme)
-#+end_src
-
-*** Set Theme
-
-#+begin_src elisp
-(setq catppuccin-flavor 'mocha)
-#+end_Src
-
-*** Kanagawa
-
-#+begin_src elisp
-(use-package kanagawa-themes)
-#+end_src
-
-#+RESULTS:
-
 
 ** Modeline
 
@@ -406,7 +344,6 @@ Just use the doom mode bar fuck it
 
 #+begin_src elisp
   (use-package helpful
-    :ensure t
     :bind (("C-h f" . helpful-callable) ;; function
 	   ("C-h v" . helpful-variable) 
 	   ("C-h k" . helpful-key)
@@ -422,22 +359,24 @@ Just use the doom mode bar fuck it
 We will use a package named switch-window in order to allow easy switching of windows when hitting
 "C-x o". Better fucking defaults too.
 #+begin_src elisp
-  (use-package switch-window
-    :ensure t
-     
-    :bind (("C-x o" . switch-window)
-	   ("C-x 1" . switch-window-then-maximize)
-	   ("C-x 2" . switch-window-then-split-below)
-	   ("C-x 3" . switch-window-then-split-right)
-	   ("C-x 0" . switch-window-then-delete)
-	   ("C-x 4 d" . switch-window-then-dired)
-	   ("C-x 4 f" . switch-window-then-find-file)))
+(use-package switch-window
+  :bind (("C-x o" . switch-window)
+	 ("C-x C-o" . other-window)
+	 ("C-x 1" . switch-window-then-maximize)
+	 ("C-x 2" . switch-window-then-split-below)
+	 ("C-x 3" . switch-window-then-split-right)
+	 ("C-x 0" . switch-window-then-delete)
+	 ("C-x 4 d" . switch-window-then-dired)
+	 ("C-x 4 f" . switch-window-then-find-file)))
 #+end_src
+
+#+RESULTS:
+: switch-window-then-find-file
+
 ** Rainbows
 Rainbow parenthesis. Enable fucking everywhere.
 #+begin_src elisp
 (use-package rainbow-delimiters
-  :ensure t
   :hook (prog-mode . rainbow-delimiters-mode))
 
 (use-package rainbow-mode)
@@ -447,18 +386,11 @@ Rainbow parenthesis. Enable fucking everywhere.
 ** Git Integration: Magit
 Magit Magit Magit
 #+begin_src elisp
-(use-package magit
-  :ensure t)
+(use-package magit)
 #+end_src
 ** Project.el
 Check out the manual page. [[info:emacs#Project File Commands][Project Functions and Default Keybindings]]. all of the default project keybindings start with 'C-x p'
 - TODO (consult-key project prefix consult-project)
-** Meson Mode: Build Systems
-Superior Build System? Not really. Scripts are very good. I also don't really care about cross platform integration. At most I will acomodate BSD systems, other glibc versions, clang, Redox. And MacOS. But Windows no.
-#+begin_src elisp
-(use-package meson-mode
-  :ensure t)
-#+end_src
 * Editing
 ** Formatting
 #+begin_src elisp
@@ -473,18 +405,18 @@ Superior Build System? Not really. Scripts are very good. I also don't really ca
   :config
   (add-hook 'prog-mode-hook #'format-all-ensure-formatter))
 #+end_src
+
 ** Lisp Editing
 Change to paredit. Learn Paredit. Download cheatsheet. Learn stuff
 #+begin_src elisp :tangle yes
-(use-package paredit
-  :ensure t)
+(use-package paredit)
 #+end_src
+
 * Programming
 ** TLDR
 TLDR pages inside of emacs for programming and command line goodness
 #+begin_src elisp
-(use-package tldr
-  :ensure t)
+(use-package tldr)
 #+end_src
 ** XRef: Lookup definitions and references of Symbols
 Used in conjunction with Etags. I need to read this particular section of the GNU Emacs Manual. [[info:emacs#Xref][Emacs XREF]]
@@ -494,41 +426,26 @@ A suitable tags file can be created with =etags= command. This is the only way I
 know of that can generate Emacs compatible tags which is called =TAGS=
 I have forgotten how to make org links.
 Xref buffer has some built in bindings. [[info:emacs#Xref Commands][XREF Mode Bindings]] 
-** Global
-GNU Global is the alternative to =etags=. Not very good though, as it lags hard as fuck.
+
 * Language Specific
-** Sway
-#+begin_src elisp
-(use-package sway)
-#+end_src
+It seems that emacs will mostly be a lisp editor.
 ** C/C++/Java CC Mode
 Starting this config from scratch. I have no idea what to do now.
-** Rust
-Check out the rust mode github page for more documentation.
+** Common Lisp
+*** Slime
+I have finally relented and decided to the the CommonLisp way.
 #+begin_src elisp
-(use-package rust-mode
-  :config
-  (setq rust-format-on-save t))
+(use-package slime
+  :init
+  (setq inferior-lisp-program "sbcl"))
 #+end_src
-** Golang
-Gopher language.
+
+#+RESULTS:
+** Racket
+Racket mode and Quak
 #+begin_src elisp
-;; functions are prefixed with go- 
-(use-package go-mode)
+(use-package racket-mode)
 #+end_src
-** Nim
-Nim language with power of power of C and extensibility of Lisp
-#+begin_src elisp
-(use-package nim-mode)
-#+end_src
-** Zig
-I refuse to use this language unless it reaches version 1.
-#+begin_src elisp
-(use-package zig-mode
-  :ensure t)
-#+end_src
-** Odin
-There is some, just have to choose the correct one.
 ** Scheme: Geiser
 Why are we still here just to suffer. Geiser is the way to go.
 Scheme completion is done with [[info:guile#Readline Functions][guile#Readline Functions]]
@@ -544,39 +461,6 @@ Scheme completion is done with [[info:guile#Readline Functions][guile#Readline F
 (use-package clojure-mode)
 (use-package cider)
 #+end_src
-** Xonsh
-Some obscure shell that no none uses.
-#+begin_src elisp
-(use-package xonsh-mode)
-#+end_src
-** Fish
-Terrible scripting language
-#+begin_src elisp
-(use-package fish-mode)
-#+end_src
-** TODO ZSH
-** TODO Xonsh
-** TODO Nushell
-** RISC-V
-Remember other assembly languages
-#+begin_src elisp
-(use-package riscv-mode
-  :ensure t)
-#+end_src
-** Swift
-Apple programming language for iOS, iPadOS and MacOS application development.
-#+begin_src elisp
-(use-package swift-mode
-  :ensure t)
-#+end_src
-** Haskell
-Function programming that is not lisp.
-#+begin_src elisp
-(use-package haskell-mode
-  :ensure t)
-#+end_src
-
-#+RESULTS:
 
 * Markup And Documents
 ** Markdown
@@ -588,8 +472,4 @@ I will continue configuring this stuff later.
   :hook (markdown-mode . (lambda ()
 			   (interactive)
 			   (setq truncate-lines t))))
-#+end_src
-** Yaml
-#+begin_src elisp
-(use-package yaml-mode)
 #+end_src
