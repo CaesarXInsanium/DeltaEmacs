@@ -1,5 +1,6 @@
 #+title: Delta Emacs configuration
 #+author: Caesar X Insanium
+#+startup: fold
 * Purpose
 This is my literate config file for Emacs. It uses =straight.el=. And does not use evil or general anymore.
 * Straight.el
@@ -132,7 +133,6 @@ Emacs Specific Configuration and the like.
 #+end_src
 
 * Org
-
 Org mode specific Configuration. I still have to read the Org Mode Manual
 
 What if I reserved single letter bindings for global minor modes and modified bindings for current major mode?
@@ -150,7 +150,7 @@ What if I reserved single letter bindings for global minor modes and modified bi
 	      ("C-c C-]" . org-do-demote )
 	      ("C-c 0" . consult-outline))
   :hook (org-mode . (lambda ()
-                      (interactive)
+   ;                   (interactive)
                       (visual-line-mode 1)
 		      (org-indent-mode 1)))
   :config
@@ -158,14 +158,15 @@ What if I reserved single letter bindings for global minor modes and modified bi
   (setq org-src-preserve-indentation nil) ;; preserve leading whitespace on export
   (setq org-edit-src-content-indentation 0) ;; disable that annoying bug where more indentation is added on newline)
   ;; confirmation of arbitrary code execute is for losers
-  (setq org-confirm-babel-evaluate nil))
+  (setq org-confirm-babel-evaluate nil)
+  (setq org-startup-folded 'fold))
 #+end_src
 
 #+RESULTS:
 : consult-outline
 
 * Enhancements
-
+Random plugins that help with everything. Make things not so unbearable.
 ** Vertico
 
 Replace or fix
@@ -194,7 +195,6 @@ Allows for more flexible completion candidate matching.
   (setq completion-styles '(orderless basic)
         completion-catagory-overrides '((file (styles basic partial-completion)))))
 #+end_src
-
 
 ** Consult
 
@@ -299,7 +299,6 @@ Searching and completion.
   ;; (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
 )
 #+end_src
-
 
 ** Icons
 
@@ -477,6 +476,30 @@ I will now do Haskell programming.
 #+end_src
 
 #+RESULTS:
+** Golang
+This is provided by a certain little project
+#+begin_src elisp
+(defun my-go-mode-settings ()
+  "Set Go industry-standard indentation and tab settings."
+  (setq-local indent-tabs-mode t)   ; Use tabs, not spaces, for indentation
+  (setq-local tab-width 4)          ; Go standard: tab width = 8
+  (setq-local standard-indent 4)    ; Ensure consistent indentation step
+  ;; If you use go-mode's own variable, set it as well
+  (setq-local go-tab-width 4))
+(use-package go-mode
+  :hook (go-mode . my-go-mode-settings))
+#+end_src
+
+#+RESULTS:
+| my-go-mode-settings | my-go-settings | doom-modeline-env-setup-go |
+
+Trying to test.
+#+begin_src go
+import "Fmt"
+func main(){
+	PrintLn("Hello World!\n")
+}
+#+end_src
 
 * Markup And Documents
 ** Markdown
