@@ -328,13 +328,6 @@ Searching and completion.
   (doom-themes-org-config))
 #+end_src
 
-*** Everforrest
-This one is hideous.
-#+begin_src elisp :tangle no
-(straight-use-package
- '(everforest :type git :repo "https://github.com/theorytoe/everforest-emacs"))
-#+end_src
-
 ** Modeline
 
 Just use the doom mode bar fuck it
