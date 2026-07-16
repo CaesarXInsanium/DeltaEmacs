@@ -308,6 +308,12 @@ Searching and completion.
 
 ** Themes
 
+*** Everforrest
+#+begin_src elisp
+(straight-use-package
+ '(everforest :repo "https://github.com/Theory-of-Everything/everforest-emacs.git"))
+#+end_src
+
 *** Doom Themes
 
 #+begin_src elisp
@@ -373,6 +379,15 @@ We will use a package named switch-window in order to allow easy switching of wi
 #+RESULTS:
 : switch-window-then-find-file
 
+** Golden Ratio Splits
+To get that BSPWM goodness
+
+#+begin_src elisp
+(straight-use-package
+ '(golden-ratio :type git :host github :repo "roman/golden-ratio.el"))
+
+(golden-ratio-mode 1)
+#+end_src
 ** Rainbows
 Rainbow parenthesis. Enable fucking everywhere.
 #+begin_src elisp
